@@ -1,0 +1,299 @@
+syntax = "proto3";
+package Buttplug;
+
+option java_package = "dev.franckyi.kbuttplug.proto";
+
+enum Endpoint {
+  Command = 0;
+  Firmware = 1;
+  Rx = 2;
+  RxAccel = 3;
+  RxBLEBattery = 4;
+  RxPressure = 5;
+  RxTouch = 6;
+  Tx = 7;
+  TxMode = 8;
+  TxShock = 9;
+  TxVibrate = 10;
+  TxVendorControl = 11;
+  Whitelist = 12;
+  Generic0 = 13;
+  Generic1 = 14;
+  Generic2 = 15;
+  Generic3 = 16;
+  Generic4 = 17;
+  Generic5 = 18;
+  Generic6 = 19;
+  Generic7 = 20;
+  Generic8 = 21;
+  Generic9 = 22;
+  Generic10 = 23;
+  Generic11 = 24;
+  Generic12 = 25;
+  Generic13 = 26;
+  Generic14 = 27;
+  Generic15 = 28;
+  Generic16 = 29;
+  Generic17 = 30;
+  Generic18 = 31;
+  Generic19 = 32;
+  Generic20 = 33;
+  Generic21 = 34;
+  Generic22 = 35;
+  Generic23 = 36;
+  Generic24 = 37;
+  Generic25 = 38;
+  Generic26 = 39;
+  Generic27 = 40;
+  Generic28 = 41;
+  Generic29 = 42;
+  Generic30 = 43;
+  Generic31 = 44;
+  RxBLEModel = 45;
+}
+
+message ClientMessage {
+  // This is a bitfield, not a normal enum
+  enum DeviceCommunicationManagerTypes {
+    All = 0;
+    Btleplug = 1;
+    XInput = 2;
+    SerialPort = 4;
+    LovenseHIDDongle = 8;
+    LovenseSerialDongle = 16;
+  }
+
+  message ConnectLocal {
+    string server_name = 1;
+    uint32 max_ping_time = 2;
+    bool allow_raw_messages = 3;
+    string device_configuration_json = 4;
+    string user_device_configuration_json = 5;
+    uint32 comm_manager_types = 6;
+  }
+
+  message ConnectWebsocket {
+    string address = 1;
+    bool bypass_cert_verification = 2;
+  }
+
+  message StartScanning {
+  }
+
+  message StopScanning {
+  }
+
+  message StopAllDevices {
+  }
+
+  message Disconnect {
+  }
+
+  message Ping {
+  }
+
+  message FFIMessage {
+    oneof msg {
+      ConnectLocal connect_local = 1;
+      ConnectWebsocket connect_websocket = 2;
+      StartScanning start_scanning = 3;
+      StopScanning stop_scanning = 4;
+      StopAllDevices stop_all_devices = 5;
+      Disconnect disconnect = 6;
+      Ping ping = 7;
+    }
+  }
+
+  uint32 id = 1;
+  FFIMessage message = 2;
+}
+
+message DeviceMessage {
+  message VibrateComponent {
+    uint32 index = 1;
+    double speed = 2;
+  }
+
+  message VibrateCmd {
+    repeated VibrateComponent speeds = 1;
+  }
+
+  message RotateComponent {
+    uint32 index = 1;
+    double speed = 2;
+    bool clockwise = 3;
+  }
+
+  message RotateCmd {
+    repeated RotateComponent rotations = 1;
+  }
+
+  message LinearComponent {
+    uint32 index = 1;
+    uint32 duration = 2;
+    double position = 3;
+  }
+
+  message LinearCmd {
+    repeated LinearComponent movements = 1;
+  }
+
+  message StopDeviceCmd {
+  }
+
+  message RawReadCmd {
+    Endpoint endpoint = 1;
+    bytes data = 2;
+    uint32 expected_length = 3;
+    uint32 timeout = 4;
+  }
+
+  message RawWriteCmd {
+    Endpoint endpoint = 1;
+    bytes data = 2;
+    bool write_with_response = 3;
+  }
+
+  message RawSubscribeCmd {
+    Endpoint endpoint = 1;
+  }
+
+  message RawUnsubscribeCmd {
+    Endpoint endpoint = 1;
+  }
+
+  message BatteryLevelCmd {
+  }
+
+  message RSSILevelCmd {
+  }
+
+  message FFIMessage {
+    oneof msg {
+      VibrateCmd vibrate_cmd = 1;
+      RotateCmd rotate_cmd = 2;
+      LinearCmd linear_cmd = 3;
+      StopDeviceCmd stop_device_cmd = 4;
+      RawReadCmd raw_read_cmd = 5;
+      RawWriteCmd raw_write_cmd = 6;
+      RawSubscribeCmd raw_subscribe_cmd = 7;
+      RawUnsubscribeCmd raw_unsubscribe_cmd = 8;
+      BatteryLevelCmd battery_level_cmd = 9;
+      RSSILevelCmd rssi_level_cmd = 10;
+    }
+  }
+
+  uint32 id = 1;
+  uint32 index = 2;
+  FFIMessage message = 3;
+}
+
+message ServerMessage {
+
+  enum ButtplugErrorType {
+    ButtplugConnectorError = 0;
+    ButtplugHandshakeError = 1;
+    ButtplugDeviceError = 2;
+    ButtplugPingError = 3;
+    ButtplugMessageError = 4;
+    ButtplugUnknownError = 5;
+  }
+
+  enum MessageAttributeType {
+    VibrateCmd = 0;
+    RotateCmd = 1;
+    LinearCmd = 2;
+    StopDeviceCmd = 3;
+    RawReadCmd = 4;
+    RawWriteCmd = 5;
+    RawSubscribeCmd = 6;
+    RawUnsubscribeCmd = 7;
+    BatteryLevelCmd = 8;
+    RSSILevelCmd = 9;
+  }
+
+  message MessageAttributes {
+    MessageAttributeType message_type = 1;
+    uint32 feature_count = 2;
+    repeated uint32 step_count = 3;
+    repeated Endpoint endpoints = 4;
+    repeated uint32 max_duration = 5;
+    // TODO Patterns
+    // TODO Actuator Type
+  }
+
+  message Ok {
+  }
+
+  message Error {
+    ButtplugErrorType error_type = 1;
+    string message = 2;
+    string backtrace = 3;
+  }
+
+  message ScanningFinished {
+  }
+
+  message DeviceAdded {
+    string name = 1;
+    uint32 index = 2;
+    repeated MessageAttributes message_attributes = 3;
+  }
+
+  message DeviceRemoved {
+    uint32 index = 1;
+  }
+
+  message Disconnect {
+  }
+
+  oneof msg {
+    Ok ok = 1;
+    Error error = 2;
+    ScanningFinished scanning_finished = 3;
+    DeviceAdded device_added = 4;
+    DeviceRemoved device_removed = 5;
+    Disconnect disconnect = 6;
+  };
+}
+
+message DeviceEvent {
+  message Disconnect {
+    uint32 index = 1;
+  }
+
+  message RawReading {
+    uint32 index = 1;
+    Endpoint endpoint = 2;
+    bytes data = 3;
+  }
+
+  message BatteryLevelReading {
+    uint32 index = 1;
+    double reading = 2;
+  }
+
+  message RSSILevelReading {
+    uint32 index = 1;
+    int32 reading = 2;
+  }
+
+  oneof msg {
+    Disconnect disconnect = 1;
+    BatteryLevelReading battery_level_reading = 2;
+    RSSILevelReading rssi_level_reading = 3;
+    RawReading raw_reading = 4;
+  };
+}
+
+message ButtplugFFIServerMessage {
+  message FFIMessage {
+    oneof msg {
+      ServerMessage server_message = 1;
+      DeviceEvent device_event = 2;
+    }
+  }
+
+  uint32 id = 1;
+  FFIMessage message = 2;
+}
