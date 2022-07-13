@@ -190,7 +190,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         CompletableFuture.runAsync {
             val future = futureServerMessageMap.remove(ctx)
             if (message.hasError()) {
-                future?.completeExceptionally(ButtplugException.fromError(message.error))
+                future?.completeExceptionally(createButtplugExceptionFromError(message.error))
             }
             future?.complete(message)
         }
@@ -201,7 +201,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         CompletableFuture.runAsync {
             val future = futureDeviceEventMap.remove(ctx)
             if (message.hasServerMessage() && message.serverMessage.hasError()) {
-                future?.completeExceptionally(ButtplugException.fromError(message.serverMessage.error))
+                future?.completeExceptionally(createButtplugExceptionFromError(message.serverMessage.error))
             }
             future?.complete(message.deviceEvent)
         }

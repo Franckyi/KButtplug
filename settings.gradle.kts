@@ -1,3 +1,5 @@
 rootProject.name = "kbuttplug"
 
-include("kbuttplug", "kbuttplug-loghandler-slf4j")
+include(":kbuttplug")
+include(":kbuttplug-loghandler-slf4j")
+include(":kbuttplug-natives")

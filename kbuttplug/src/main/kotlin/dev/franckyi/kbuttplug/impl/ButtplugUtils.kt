@@ -2,7 +2,7 @@ package dev.franckyi.kbuttplug.impl
 
 import com.sun.jna.Native
 import com.sun.jna.Pointer
-import dev.franckyi.kbuttplug.api.ButtplugMessageException
+import dev.franckyi.kbuttplug.api.*
 import dev.franckyi.kbuttplug.proto.ButtplugRsFfi
 import java.util.concurrent.CompletionException
 
@@ -30,4 +30,17 @@ internal fun readFFIMessage(ptr: Pointer, len: u32): ButtplugRsFfi.ButtplugFFISe
 
 internal fun expectServerOk(msg: ServerMessage) {
     if (!msg.hasOk()) throw CompletionException(ButtplugMessageException("Expected Ok"))
+}
+
+internal fun createButtplugExceptionFromError(err: ButtplugRsFfi.ServerMessage.Error): ButtplugException {
+    val msg = err.message
+    return when (err.errorType) {
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugConnectorError -> ButtplugConnectorException(msg)
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugPingError -> ButtplugPingException(msg)
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugMessageError -> ButtplugMessageException(msg)
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugHandshakeError -> ButtplugHandshakeException(msg)
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugDeviceError -> ButtplugDeviceException(msg)
+        ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugUnknownError -> ButtplugUnknownException(msg)
+        else -> ButtplugUnknownException("Unknown error type: ${err.errorType.number} | Message: $msg")
+    }
 }

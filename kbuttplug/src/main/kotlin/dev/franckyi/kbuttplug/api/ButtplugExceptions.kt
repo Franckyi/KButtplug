@@ -1,7 +1,5 @@
 package dev.franckyi.kbuttplug.api
 
-import dev.franckyi.kbuttplug.proto.ButtplugRsFfi
-
 /**
  * Root class for all exceptions thrown by Buttplug.
  *
@@ -12,29 +10,7 @@ import dev.franckyi.kbuttplug.proto.ButtplugRsFfi
  * @see ButtplugPingException
  * @see ButtplugUnknownException
  */
-sealed class ButtplugException(msg: String?) : Exception(msg) {
-    companion object {
-        /**
-         * Parses a Buttplug `Error` message sent by the server to the client
-         * into a [ButtplugException] of the corresponding error type.
-         *
-         * @param err the `Error` message sent by the server to the client
-         * @return the [ButtplugException] of the corresponding error type
-         */
-        fun fromError(err: ButtplugRsFfi.ServerMessage.Error): ButtplugException {
-            val msg = err.message
-            return when (err.errorType) {
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugConnectorError -> ButtplugConnectorException(msg)
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugPingError -> ButtplugPingException(msg)
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugMessageError -> ButtplugMessageException(msg)
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugHandshakeError -> ButtplugHandshakeException(msg)
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugDeviceError -> ButtplugDeviceException(msg)
-                ButtplugRsFfi.ServerMessage.ButtplugErrorType.ButtplugUnknownError -> ButtplugUnknownException(msg)
-                else -> ButtplugUnknownException("Unknown error type: ${err.errorType.number} | Message: $msg")
-            }
-        }
-    }
-}
+sealed class ButtplugException(msg: String?) : Exception(msg)
 
 /**
  * Thrown when an error occurs while connecting to the server.

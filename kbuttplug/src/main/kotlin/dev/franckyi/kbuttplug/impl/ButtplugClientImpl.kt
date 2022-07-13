@@ -145,7 +145,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         val message = readServerMessage(ptr, len)
         CompletableFuture.runAsync {
             if (message.hasError()) {
-                onError?.invoke(ButtplugException.fromError(message.error))
+                onError?.invoke(createButtplugExceptionFromError(message.error))
             } else if (message.hasScanningFinished()) {
                 scanning = false
                 onScanningFinished?.invoke()
@@ -177,7 +177,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         CompletableFuture.runAsync {
             val future = ctx?.let { futureServerMessageMap.remove(it) }
             if (message.hasError()) {
-                future?.completeExceptionally(ButtplugException.fromError(message.error))
+                future?.completeExceptionally(createButtplugExceptionFromError(message.error))
             }
             future?.complete(message)
         }

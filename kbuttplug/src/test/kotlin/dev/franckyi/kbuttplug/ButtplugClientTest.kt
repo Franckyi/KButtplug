@@ -4,10 +4,8 @@ import dev.franckyi.kbuttplug.api.ButtplugClient
 import dev.franckyi.kbuttplug.api.ButtplugLogHandler
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-@Disabled
 class ButtplugClientTest {
     companion object {
         @BeforeAll
