@@ -19,19 +19,16 @@ class ButtplugClientTest {
     fun testClientLifecycle() {
         val client = ButtplugClient.create("Test")
         client.use {
-            it.connectLocal(maxPingTime = 2000).get()
+            it.connectLocal().get()
             assertTrue(it.connected)
             it.startScanning().get()
             assertTrue(it.scanning)
-            for (i in 0 until 5) {
-                it.ping().get()
-                Thread.sleep(1000)
-            }
+            Thread.sleep(1000)
             it.stopScanning().get()
             assertFalse(it.scanning)
             it.disconnect().get()
             assertFalse(it.connected)
-            assertThrows(IllegalStateException::class.java) { it.ping() }
+            assertThrows(IllegalStateException::class.java) { it.startScanning().get() }
         }
     }
 }

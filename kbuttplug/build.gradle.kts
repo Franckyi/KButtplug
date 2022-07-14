@@ -1,13 +1,8 @@
 import com.google.protobuf.gradle.*
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    //kotlin("jvm")
-    //id("org.jetbrains.dokka")
     id("com.google.protobuf")
 }
-
-version = "0.1.0"
 
 dependencies {
     implementation("net.java.dev.jna:jna:5.11.0")
@@ -30,22 +25,6 @@ protobuf {
             it.builtins {
                 id("kotlin")
             }
-        }
-    }
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
         }
     }
 }

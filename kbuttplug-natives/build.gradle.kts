@@ -1,4 +1,4 @@
-version = "2.0.4"
+version = rootProject.property("ffi_version") as String
 
 val native: Configuration by configurations.creating
 
@@ -43,22 +43,27 @@ dependencies {
     )
 }
 
+val publication = publishing.publications.getByName<MavenPublication>("mavenJava") {
+    pom {
+        name.set("KButtplug Natives")
+        description.set("Buttplug Rust FFI native libraries for Windows, MacOS and Linux")
+    }
+}
+
 native.resolvedConfiguration.resolvedArtifacts.forEach {
     tasks.processResources {
         from(zipTree(it.file))
     }
 
-    val plaftormJarTask = tasks.create<Jar>("build-${it.classifier}") {
-        from(it.file)
+    val plaftormJarTask = tasks.create<Jar>("build${it.classifier!!.capitalize()}") {
+        from(zipTree(it.file))
         archiveClassifier.set(it.classifier)
     }
 
     tasks.build {
         dependsOn(plaftormJarTask)
     }
-}
 
-java {
-    withJavadocJar()
+    publication.artifact(plaftormJarTask)
 }
 
