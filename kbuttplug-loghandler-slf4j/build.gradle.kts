@@ -2,6 +2,8 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+version = rootProject.property("loghandler_slf4j_version") as String
+
 dependencies {
     implementation(project(":kbuttplug"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")

@@ -141,6 +141,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return future
     }
 
+    @Suppress("unused_parameter")
     private fun onServerEvent(ctx: Pointer?, ptr: Pointer, len: u32) {
         val message = readServerMessage(ptr, len)
         CompletableFuture.runAsync {

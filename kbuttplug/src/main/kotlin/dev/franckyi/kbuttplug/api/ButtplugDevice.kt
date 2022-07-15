@@ -216,39 +216,39 @@ enum class DeviceAttributeType(internal val type: ButtplugRsFfi.ServerMessage.Me
     /**
      * @see ButtplugDevice.rotate
      */
-    RotateCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    RotateCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RotateCmd),
 
     /**
      * @see ButtplugDevice.linear
      */
-    LinearCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    LinearCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.LinearCmd),
 
     /**
      * @see ButtplugDevice.stop
      */
-    StopDeviceCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    StopDeviceCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.StopDeviceCmd),
 
     @Deprecated("No implementation yet")
-    RawReadCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    RawReadCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RawReadCmd),
 
     @Deprecated("No implementation yet")
-    RawWriteCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    RawWriteCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RawWriteCmd),
 
     @Deprecated("No implementation yet")
-    RawSubscribeCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    RawSubscribeCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RawSubscribeCmd),
 
     @Deprecated("No implementation yet")
-    RawUnsubscribeCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    RawUnsubscribeCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RawUnsubscribeCmd),
 
     /**
      * @see ButtplugDevice.fetchBatteryLevel
      */
-    BatteryLevelCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd),
+    BatteryLevelCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.BatteryLevelCmd),
 
     /**
      * @see ButtplugDevice.fetchRSSILevel
      */
-    RSSILevelCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.VibrateCmd);
+    RSSILevelCmd(ButtplugRsFfi.ServerMessage.MessageAttributeType.RSSILevelCmd);
 
     companion object {
         internal val inverse = values().associateBy({ it.type }, { it })

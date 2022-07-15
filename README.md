@@ -37,14 +37,14 @@ log messages to a SLF4J logger.
 ### Gradle (Groovy)
 
 ```groovy
-implementation 'dev.franckyi.kbuttplug:kbuttplug:0.1.0'
+implementation 'dev.franckyi.kbuttplug:kbuttplug:0.1.1'
 runtimeOnly 'dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4'
 ```
 
 ### Gradle (Kotlin)
 
 ```kotlin
-implementation("dev.franckyi.kbuttplug:kbuttplug:0.1.0")
+implementation("dev.franckyi.kbuttplug:kbuttplug:0.1.1")
 runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 ```
 
@@ -54,7 +54,7 @@ runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
     <artifactId>kbuttplug</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
