@@ -16,6 +16,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
     private var pointer: Pointer?
     private val futureServerMessageMap: MutableMap<Pointer, CompletableFuture<ServerMessage>> =
         ConcurrentHashMap()
+    private val onServerEventCallback = ButtplugCallback.of(::onServerEvent)
     private val onServerResponseCallback = ButtplugCallback.of(::onServerResponse)
 
     override var connected: Boolean = false
@@ -36,7 +37,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
     init {
         pointer = ButtplugFFI.INSTANCE.buttplug_create_protobuf_client(
             name,
-            ButtplugCallback.of(::onServerEvent),
+            onServerEventCallback,
             u32(Pointer.nativeValue(createPointer(this)))
         )
     }
