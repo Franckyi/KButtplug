@@ -4,9 +4,7 @@ import com.sun.jna.Native
 import com.sun.jna.Pointer
 import dev.franckyi.kbuttplug.api.*
 import dev.franckyi.kbuttplug.proto.ButtplugRsFfi
-import java.util.concurrent.CompletionException
-
-//private val logger = KotlinLogging.logger {}
+import dev.franckyi.kbuttplug.proto.serverMessageOrNull
 
 internal fun createPointer(obj: Any): Pointer {
     val addressMask = 2L xor Native.POINTER_SIZE * 8L - 1
@@ -15,21 +13,27 @@ internal fun createPointer(obj: Any): Pointer {
     )
 }
 
-internal typealias ServerMessage = ButtplugRsFfi.ServerMessage
+internal typealias FFIMessage = ButtplugRsFfi.ButtplugFFIServerMessage.FFIMessage
 
 internal typealias DeviceAddedMessage = ButtplugRsFfi.ServerMessage.DeviceAdded
 
-internal fun readServerMessage(ptr: Pointer, len: u32): ServerMessage = readFFIMessage(ptr, len).serverMessage
-
-internal fun readFFIMessage(ptr: Pointer, len: u32): ButtplugRsFfi.ButtplugFFIServerMessage.FFIMessage {
+internal fun readFFIMessage(ptr: Pointer, len: u32): FFIMessage {
     val buf = ptr.getByteBuffer(0, len.toLong())
     val msg = ButtplugRsFfi.ButtplugFFIServerMessage.parseFrom(buf)
-    //logger.trace { "Received message: $msg" }
     return msg.message
 }
 
-internal fun expectServerOk(msg: ServerMessage) {
-    if (!msg.hasOk()) throw CompletionException(ButtplugMessageException("Expected Ok"))
+internal fun expectServerMessage(msg: FFIMessage) =
+    checkNotNull(msg.serverMessageOrNull) { "Expected SERVER_MESSAGE message, got ${msg.msgCase.name} instead" }
+
+internal fun expectOk(msg: ButtplugRsFfi.ServerMessage) {
+    if (!msg.hasOk()) {
+        if (msg.hasError()) {
+            throw createButtplugExceptionFromError(msg.error)
+        } else {
+            throw IllegalStateException("Expected OK message, got ${msg.msgCase.name} instead")
+        }
+    }
 }
 
 internal fun createButtplugExceptionFromError(err: ButtplugRsFfi.ServerMessage.Error): ButtplugException {

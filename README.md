@@ -16,6 +16,7 @@ before upgrading versions.***
   * [Maven](#Maven)
 * [Usage](#Usage)
   * [Initializing](#Initializing)
+  * [Logging](#Logging)
   * [Connecting](#Connecting)
   * [Scanning](#Scanning)
   * [Controlling](#Controlling)
@@ -31,20 +32,17 @@ packages a library containing this native library: `kbuttplug-natives`.
 You can either use the multiplatform artifact (without classifier) or a platform-specific artifact using one of
 the `windows`, `macos` or `linux` classifiers.
 
-KButtplug also provides a `kbuttplug-loghandler-slf4j` artifact that can be used to register a log handler that forwards
-log messages to a SLF4J logger.
-
 ### Gradle (Groovy)
 
 ```groovy
-implementation 'dev.franckyi.kbuttplug:kbuttplug:0.1.1'
+implementation 'dev.franckyi.kbuttplug:kbuttplug:0.2.0'
 runtimeOnly 'dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4'
 ```
 
 ### Gradle (Kotlin)
 
 ```kotlin
-implementation("dev.franckyi.kbuttplug:kbuttplug:0.1.1")
+implementation("dev.franckyi.kbuttplug:kbuttplug:0.2.0")
 runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 ```
 
@@ -54,7 +52,7 @@ runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
     <artifactId>kbuttplug</artifactId>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
 </dependency>
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
@@ -70,6 +68,7 @@ runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 First, you need to register a ButtplugClient:
 
 ```kotlin
+// Instanciate a ButtplugClient
 val client = ButtplugClient.create("My Client")
 ```
 
@@ -78,19 +77,30 @@ You can register callbacks on the client to handle events received from the serv
 ```kotlin
 // Prints error messages to stdout
 client.onError = { error -> println("Error: $error") }
+
 // Prints new device names to stdout
 client.onDeviceAdded = { device -> println("New device added: ${device.name}") } 
 ```
 
-KButtplug also supports registering a log handler for log messages recieved by the native library.
-You can register a default log handler that prints log messages to stdout,
+### Logging
+
+KButtplug supports registering a log handler for log messages sent by the native library.
+You can either activate the default log handler that prints the log messages of the library to `stdout`,
 or you can register a custom log handler that you can use to log messages to your own logger.
 
 ```kotlin
-// Register a default log handler that prints log messages to stdout
+// Register a default log handler that prints log messages to stdout, cannot deactivate
 ButtplugLogHandler.activateBuiltinLogger()
-// Register a SLF4J log handler (requires kbuttplug-loghandler-slf4j dependency)
-val logHandler = ButtplugLogHandler.createSlf4jLogger()
+
+// Register a simple log handler
+val logHandler = ButtplugLogHandler.createSimpleLogger { println(it) }
+
+// Register a SLF4J log handler
+val logger = LoggerFactory.getLogger("MyLogger")
+val logHandler = ButtplugLogHandler.createSlf4jLogger(logger)
+
+// Remember to close the logger when you are done
+logHandler.close()
 ```
 
 ### Connecting
@@ -101,7 +111,8 @@ application:
 ```kotlin
 // Connect to an external server (for example: a server running with Intiface Desktop)
 client.connectWebsocket("ws://localhost:12345")
-// Or connect to an embedded server
+
+// Connect to an embedded server
 client.connectLocal("My Server")
 ```
 
@@ -115,14 +126,14 @@ After the connection is done, you can start scanning for devices:
 client.startScanning()
 ```
 
-Every time a new device is found, it is added to the `devices` map of the client.
+Every time a new device is found, it will be added to the `devices` map of the client.
 
 ### Controlling
 
-The client exposes the `devices` map that you can use to control devices:
+The client exposes the `devices` map that you can use to control the device of your choice:
 
 ```kotlin
-// vibrate all devices at 50% speed
+// Vibrate all devices at 50% speed
 client.devices.forEach { it.value.vibrate(0.5) }
 ```
 
@@ -131,8 +142,9 @@ client.devices.forEach { it.value.vibrate(0.5) }
 Once you are done, you can disconnect:
 
 ```kotlin
-client.disconnect().thenRun {
-    // don't forget to close the client to free memory
+// Disconnect from the server
+client.disconnect().whenComplete { _, _ ->
+    // Remember to  close the client when you're done
     client.close()
 }
 ```
@@ -145,11 +157,4 @@ You can build KButtplug using these commands:
 git clone https://github.com/Franckyi/KButtplug
 cd KButtplug
 ./gradlew build
-```
-
-You can also specify a module to build:
-
-```shell
-# Builds only the kbuttplug module
-./gradlew :kbuttplug:build
 ```

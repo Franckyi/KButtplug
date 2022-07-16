@@ -1,7 +1,10 @@
 package dev.franckyi.kbuttplug.impl
 
 import com.sun.jna.Pointer
-import dev.franckyi.kbuttplug.api.*
+import dev.franckyi.kbuttplug.api.ButtplugClient
+import dev.franckyi.kbuttplug.api.ButtplugDevice
+import dev.franckyi.kbuttplug.api.ButtplugException
+import dev.franckyi.kbuttplug.api.DeviceCommunicationType
 import dev.franckyi.kbuttplug.proto.ButtplugRsFfi
 import dev.franckyi.kbuttplug.proto.ClientMessageKt
 import dev.franckyi.kbuttplug.proto.ClientMessageKt.connectLocal
@@ -14,8 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
     private var pointer: Pointer?
-    private val futureServerMessageMap: MutableMap<Pointer, CompletableFuture<ServerMessage>> =
-        ConcurrentHashMap()
+    private val futureResponseMap: MutableMap<Pointer, CompletableFuture<FFIMessage>> = ConcurrentHashMap()
     private val onServerEventCallback = ButtplugCallback.of(::onServerEvent)
     private val onServerResponseCallback = ButtplugCallback.of(::onServerResponse)
 
@@ -59,7 +61,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         allowRawMessages: Boolean,
         maxPingTime: Int
     ): CompletableFuture<Void> {
-        if (connected) return CompletableFuture.completedFuture(null)
+        check(!connected) { "Client is already connected to a server" }
         return sendClientMessage {
             this.connectLocal = connectLocal {
                 this.serverName = serverName
@@ -70,18 +72,20 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
                 this.maxPingTime = maxPingTime
             }
         }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
             .thenRun { connected = true }
     }
 
     override fun connectWebsocket(address: String): CompletableFuture<Void> {
-        if (connected) return CompletableFuture.completedFuture(null)
+        check(!connected) { "Client is already connected to a server" }
         return sendClientMessage {
             this.connectWebsocket = connectWebsocket {
                 this.address = address
             }
         }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
             .thenRun { connected = true }
     }
 
@@ -89,16 +93,18 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         check(connected) { "Client is not connected to a server" }
         if (scanning) return CompletableFuture.completedFuture(null)
         return sendClientMessage { this.startScanning = defaultStartScanning }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
             .thenRun { scanning = true }
     }
 
     override fun stopScanning(): CompletableFuture<Void> {
         check(connected) { "Client is not connected to a server" }
         if (!scanning) return CompletableFuture.completedFuture(null)
-        scanning = false
         return sendClientMessage { this.stopScanning = defaultStopScanning }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
+            .thenRun { scanning = false }
     }
 
     override fun stopAllDevices(): CompletableFuture<Void> {
@@ -106,31 +112,36 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return sendClientMessage {
             this.stopAllDevices = defaultStopAllDevices
         }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
     }
 
     override fun ping(): CompletableFuture<Void> {
         check(connected) { "Client is not connected to a server" }
         return sendClientMessage { this.ping = defaultPing }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
     }
 
     override fun disconnect(): CompletableFuture<Void> {
         check(connected) { "Client is not connected to a server" }
-        connected = false
-        _devices.clear()
         return sendClientMessage { this.disconnect = defaultDisconnect }
-            .thenAccept(::expectServerOk)
+            .thenApply(::expectServerMessage)
+            .thenAccept(::expectOk)
+            .thenRun {
+                connected = false
+                _devices.clear()
+            }
     }
 
-    private fun sendClientMessage(block: ClientMessageBuilder): CompletableFuture<ServerMessage> {
-        val clientPointer = checkNotNull(pointer) { "Attempt to send message when client has already been closed!" }
+    private fun sendClientMessage(block: ClientMessageBuilder): CompletableFuture<FFIMessage> {
+        val clientPointer = checkNotNull(pointer) { "Attempt to send message when client has already been closed" }
         val msg = clientMessage {
             this.message = fFIMessage(block)
         }
-        val future = CompletableFuture<ServerMessage>()
+        val future = CompletableFuture<FFIMessage>()
         val ptr = createPointer(future)
-        futureServerMessageMap[ptr] = future
+        futureResponseMap[ptr] = future
         val buf = msg.toByteArray()
         ButtplugFFI.INSTANCE.buttplug_client_protobuf_message(
             clientPointer,
@@ -142,51 +153,43 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return future
     }
 
-    @Suppress("unused_parameter")
-    private fun onServerEvent(ctx: Pointer?, ptr: Pointer, len: u32) {
-        val message = readServerMessage(ptr, len)
-        CompletableFuture.runAsync {
-            if (message.hasError()) {
-                onError?.invoke(createButtplugExceptionFromError(message.error))
-            } else if (message.hasScanningFinished()) {
-                scanning = false
-                onScanningFinished?.invoke()
-            } else if (message.hasDeviceAdded()) {
-                val msg = message.deviceAdded
-                if (devices.containsKey(msg.index)) {
-                    throw ButtplugDeviceException("Duplicate device id received")
-                }
-                val device = createDevice(msg)
-                _devices[msg.index] = device
-                onDeviceAdded?.invoke(device)
-            } else if (message.hasDeviceRemoved()) {
-                val msg = message.deviceRemoved
-                val device = _devices.remove(msg.index)
-                device?.let {
-                    onDeviceRemoved?.invoke(it)
-                    it.close()
-                }
-            } else if (message.hasDisconnect()) {
-                connected = false
-                _devices.clear()
-                onDisconnect?.invoke()
-            }
-        }
+    private fun onServerResponse(ctx: Pointer?, ptr: Pointer, len: u32) {
+        val message = readFFIMessage(ptr, len)
+        CompletableFuture.runAsync { ctx?.let { futureResponseMap.remove(it) }?.complete(message) }
     }
 
-    private fun onServerResponse(ctx: Pointer?, ptr: Pointer, len: u32) {
-        val message = readServerMessage(ptr, len)
+    @Suppress("unused_parameter")
+    private fun onServerEvent(ctx: Pointer?, ptr: Pointer, len: u32) {
+        val ffiMessage = readFFIMessage(ptr, len)
         CompletableFuture.runAsync {
-            val future = ctx?.let { futureServerMessageMap.remove(it) }
-            if (message.hasError()) {
-                future?.completeExceptionally(createButtplugExceptionFromError(message.error))
+            if (ffiMessage.hasServerMessage()) {
+                val serverMessage = ffiMessage.serverMessage
+                if (serverMessage.hasError()) {
+                    onError?.invoke(createButtplugExceptionFromError(serverMessage.error))
+                } else if (serverMessage.hasScanningFinished()) {
+                    scanning = false
+                    onScanningFinished?.invoke()
+                } else if (serverMessage.hasDeviceAdded()) {
+                    val deviceAddedMessage = serverMessage.deviceAdded
+                    check(!devices.containsKey(deviceAddedMessage.index)) { "Duplicate device index ${deviceAddedMessage.index} received" }
+                    val device = createDevice(deviceAddedMessage)
+                    _devices[deviceAddedMessage.index] = device
+                    onDeviceAdded?.invoke(device)
+                } else if (serverMessage.hasDeviceRemoved()) {
+                    val deviceRemovedMessage = serverMessage.deviceRemoved
+                    val device = _devices.remove(deviceRemovedMessage.index)
+                    device?.use { onDeviceRemoved?.invoke(it) }
+                } else if (serverMessage.hasDisconnect()) {
+                    connected = false
+                    _devices.clear()
+                    onDisconnect?.invoke()
+                }
             }
-            future?.complete(message)
         }
     }
 
     private fun createDevice(msg: DeviceAddedMessage): ButtplugDeviceImpl {
-        val ptr = checkNotNull(pointer) { "Attempt to create device when client has already been closed!" }
+        val ptr = checkNotNull(pointer) { "Attempt to create device when client has already been closed" }
         return ButtplugDeviceImpl(ptr, msg)
     }
 }
