@@ -35,14 +35,14 @@ the `windows`, `macos` or `linux` classifiers.
 ### Gradle (Groovy)
 
 ```groovy
-implementation 'dev.franckyi.kbuttplug:kbuttplug:0.2.1'
+implementation 'dev.franckyi.kbuttplug:kbuttplug:0.2.2'
 runtimeOnly 'dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4'
 ```
 
 ### Gradle (Kotlin)
 
 ```kotlin
-implementation("dev.franckyi.kbuttplug:kbuttplug:0.2.1")
+implementation("dev.franckyi.kbuttplug:kbuttplug:0.2.2")
 runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 ```
 
@@ -52,7 +52,7 @@ runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
     <artifactId>kbuttplug</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
 </dependency>
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
@@ -112,11 +112,12 @@ or you can use an embedded server that runs within your application:
 // Connect to an external server (for example: a server running with Intiface Desktop)
 client.connectWebsocket("ws://localhost:12345")
 
-// Connect to an embedded server
+// Connect to an embedded server (not recommended, causes memory leaks in some cases)
 client.connectLocal("My Server")
 ```
 
-> Note: Most API methods are executed asynchronously and return a CompletableFuture.
+> Note: Most API methods on ButtplugClient and ButtplugDevice are executed asynchronously
+> and return a CompletableFuture.
 
 ### Scanning
 

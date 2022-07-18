@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.7.10"
     kotlin("plugin.serialization") version "1.7.10"
-    id("org.jetbrains.dokka") version "1.7.0"
+    id("org.jetbrains.dokka") version "1.7.10"
     id("com.google.protobuf") version "0.8.19"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     idea
@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     implementation("net.java.dev.jna:jna:${rootProject.property("jna_version")}")
-    implementation("com.google.protobuf:protobuf-kotlin:${rootProject.property("protobuf_version")}")
+    implementation("com.google.protobuf:protobuf-kotlin-lite:${rootProject.property("protobuf_version")}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${rootProject.property("kotlinx_serialization_version")}")
     implementation("org.slf4j:slf4j-api:${rootProject.property("slf4j_version")}")
     implementation("io.github.microutils:kotlin-logging-jvm:${rootProject.property("kotlin_logging_version")}")
@@ -69,7 +69,12 @@ protobuf {
     generateProtoTasks {
         all().forEach {
             it.builtins {
-                id("kotlin")
+                getByName("java") {
+                    option("lite")
+                }
+                id("kotlin") {
+                    option("lite")
+                }
             }
         }
     }

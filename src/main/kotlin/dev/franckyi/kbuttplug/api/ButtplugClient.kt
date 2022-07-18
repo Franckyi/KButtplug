@@ -125,6 +125,7 @@ interface ButtplugClient : AutoCloseable {
      * or fails if a connection error occurs
      * @see disconnect
      */
+    @Deprecated("Causes memory leaks in some cases", ReplaceWith("connectWebsocket()"))
     fun connectLocal(
         serverName: String = "Buttplug Java Embedded Server",
         deviceConfigJSON: String = "",

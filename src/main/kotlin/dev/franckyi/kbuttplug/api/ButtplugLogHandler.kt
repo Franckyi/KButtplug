@@ -10,9 +10,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * **IMPORTANT NOTE: Memory leaks are being investigated when instanciating a new [ButtplugLogHandler],
- * so please only use [activateBuiltinLogger] for now.**
- *
  * Represents a log callback that the FFI can call to output log messages.
  *
  * You can either use the builtin log handler which logs to console using [activateBuiltinLogger],
@@ -39,7 +36,6 @@ interface ButtplugLogHandler : AutoCloseable {
          * @param callback the callback to call when a log message is received
          * @return the log handler
          */
-        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createLogger(
             level: Level = Level.TRACE,
             useJson: Boolean = false,
@@ -56,7 +52,6 @@ interface ButtplugLogHandler : AutoCloseable {
          * @param callback the callback to call when a log message is received
          * @return the log handler
          */
-        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createAdvancedLogger(
             level: Level = Level.TRACE,
             callback: (ButtplugLogMessage) -> Unit
@@ -71,7 +66,6 @@ interface ButtplugLogHandler : AutoCloseable {
          * @return the log handler
          * @see ButtplugLogMessage
          */
-        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createSlf4jLogger(
             logger: Logger = LoggerFactory.getLogger("buttplug_rs_ffi"),
             level: Level = Level.TRACE,

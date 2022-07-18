@@ -61,6 +61,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         }
     }
 
+    @Deprecated("Causes memory leaks in some cases", ReplaceWith("connectWebsocket()"))
     override fun connectLocal(
         serverName: String,
         deviceConfigJSON: String,
@@ -84,8 +85,8 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
             .thenRun {
-                logger.info { "Client $name connected to server" }
                 connected = true
+                logger.info { "Client $name connected to local server $serverName" }
             }
     }
 
@@ -99,7 +100,10 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
-            .thenRun { connected = true }
+            .thenRun {
+                connected = true
+                logger.info { "Client $name connected to server at address $address" }
+            }
     }
 
     override fun startScanning(): CompletableFuture<Void> {
@@ -109,7 +113,10 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return sendClientMessage { this.startScanning = defaultStartScanning }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
-            .thenRun { scanning = true }
+            .thenRun {
+                scanning = true
+                logger.debug { "Started scanning for devices" }
+            }
     }
 
     override fun stopScanning(): CompletableFuture<Void> {
@@ -119,7 +126,10 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return sendClientMessage { this.stopScanning = defaultStopScanning }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
-            .thenRun { scanning = false }
+            .thenRun {
+                scanning = false
+                logger.debug { "Stopped scanning for devices" }
+            }
     }
 
     override fun stopAllDevices(): CompletableFuture<Void> {
@@ -127,6 +137,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return sendClientMessage { this.stopAllDevices = defaultStopAllDevices }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Stopped all devices" } }
     }
 
     override fun ping(): CompletableFuture<Void> {
@@ -134,6 +145,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         return sendClientMessage { this.ping = defaultPing }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Pinged server" } }
     }
 
     override fun disconnect(): CompletableFuture<Void> {
@@ -143,10 +155,10 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
             .thenRun {
-                logger.info { "Client $name disconnected from server" }
                 connected = false
                 scanning = false
                 _devices.clear()
+                logger.info { "Client $name disconnected from server" }
             }
     }
 
@@ -159,7 +171,6 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
         val ptr = createPointer(future)
         futureResponseMap[ptr] = future
         val buf = msg.toByteArray()
-        logger.trace { "Client message sent to server: $msg" }
         ButtplugFFI.INSTANCE.buttplug_client_protobuf_message(
             clientPointer,
             buf,
@@ -167,6 +178,7 @@ internal class ButtplugClientImpl(override val name: String) : ButtplugClient {
             onServerResponseCallback,
             ptr
         )
+        logger.trace { "Client message sent to server: $msg" }
         return future.orTimeout(10, TimeUnit.SECONDS).exceptionally {
             logger.error { "Did not get a response from server in time" }
             futureResponseMap.remove(ptr)

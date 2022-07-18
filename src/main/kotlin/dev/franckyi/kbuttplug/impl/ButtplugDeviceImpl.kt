@@ -59,6 +59,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         return sendDeviceMessage { stopDeviceCmd = defaultStopDeviceCmd }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Stopped device $name" } }
     }
 
     override fun vibrate(speeds: Map<Int, Double>): CompletableFuture<Void> {
@@ -77,6 +78,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Vibrated device $name at speeds $speeds" } }
     }
 
     override fun vibrate(speed: Double): CompletableFuture<Void> {
@@ -104,6 +106,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Rotated device $name at speeds $components" } }
     }
 
     override fun rotate(speed: Double, clockwise: Boolean): CompletableFuture<Void> {
@@ -135,6 +138,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Linearly moved device $name to positions $components" } }
     }
 
     override fun linear(duration: Int, position: Double): CompletableFuture<Void> {
@@ -154,7 +158,10 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         return sendDeviceMessage { this.batteryLevelCmd = defaultBatteryLevelCmd }
             .thenApply(::expectDeviceEvent)
             .thenApply(::expectBatteryLevelReading)
-            .thenApply { it.reading }
+            .thenApply {
+                logger.debug { "Fetched battery level for device $name: ${it.reading}" }
+                it.reading
+            }
     }
 
     override fun fetchRSSILevel(): CompletableFuture<Int> {
@@ -163,6 +170,10 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
             .thenApply(::expectDeviceEvent)
             .thenApply(::expectRSSILevelReading)
             .thenApply { it.reading }
+            .thenApply {
+                logger.debug { "Fetched RSSI level for device $name: ${it}" }
+                it
+            }
     }
 
     override fun rawWrite(endpoint: Endpoint, data: ByteArray, writeWithResponse: Boolean): CompletableFuture<Void> {
@@ -176,6 +187,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
+            .thenRun { logger.debug { "Wrote to endpoint $endpoint of device $name: $data" } }
     }
 
     override fun rawRead(endpoint: Endpoint, expectedLength: Int, timeout: Int): CompletableFuture<ByteArray> {
@@ -189,6 +201,10 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         }
             .thenApply(::expectDeviceEvent)
             .thenApply { it.rawReading.data.toByteArray() }
+            .thenApply {
+                logger.debug { "Read from endpoint $endpoint of device $name: $it" }
+                it
+            }
     }
 
     override fun rawSubscribe(endpoint: Endpoint, callback: EndpointCallback): CompletableFuture<Void> {
@@ -201,6 +217,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
             .thenRun { endpointSubscriptions[endpoint] = callback }
+            .thenRun { logger.debug { "Subscribed to endpoint $endpoint of device $name" } }
     }
 
     override fun rawUnsubscribe(endpoint: Endpoint): CompletableFuture<Void> {
@@ -213,6 +230,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
             .thenRun { endpointSubscriptions.remove(endpoint) }
+            .thenRun { logger.debug { "Unsubscribed from endpoint $endpoint of device $name" } }
     }
 
     private fun <T> mapFromConst(value: T, ty: DeviceAttributeType): Map<Int, T> {
