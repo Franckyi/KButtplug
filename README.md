@@ -35,14 +35,14 @@ the `windows`, `macos` or `linux` classifiers.
 ### Gradle (Groovy)
 
 ```groovy
-implementation 'dev.franckyi.kbuttplug:kbuttplug:0.2.0'
+implementation 'dev.franckyi.kbuttplug:kbuttplug:0.2.1'
 runtimeOnly 'dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4'
 ```
 
 ### Gradle (Kotlin)
 
 ```kotlin
-implementation("dev.franckyi.kbuttplug:kbuttplug:0.2.0")
+implementation("dev.franckyi.kbuttplug:kbuttplug:0.2.1")
 runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 ```
 
@@ -52,7 +52,7 @@ runtimeOnly("dev.franckyi.kbuttplug:kbuttplug-natives:2.0.4")
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
     <artifactId>kbuttplug</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 <dependency>
     <groupId>dev.franckyi.kbuttplug</groupId>
@@ -89,7 +89,7 @@ You can either activate the default log handler that prints the log messages of 
 or you can register a custom log handler that you can use to log messages to your own logger.
 
 ```kotlin
-// Register a default log handler that prints log messages to stdout, cannot deactivate
+// Activate the builtin log handler that prints log messages to stdout (cannot deactivate)
 ButtplugLogHandler.activateBuiltinLogger()
 
 // Register a simple log handler
@@ -99,14 +99,14 @@ val logHandler = ButtplugLogHandler.createSimpleLogger { println(it) }
 val logger = LoggerFactory.getLogger("MyLogger")
 val logHandler = ButtplugLogHandler.createSlf4jLogger(logger)
 
-// Remember to close the logger when you are done
+// Remember to close the log handler when you are done
 logHandler.close()
 ```
 
 ### Connecting
 
-Then, you can connect to a ButtplugServer using websockets, or you can use an embedded server that runs within your
-application:
+Then, you can connect to a ButtplugServer using websockets,
+or you can use an embedded server that runs within your application:
 
 ```kotlin
 // Connect to an external server (for example: a server running with Intiface Desktop)
@@ -144,8 +144,8 @@ Once you are done, you can disconnect:
 ```kotlin
 // Disconnect from the server
 client.disconnect().whenComplete { _, _ ->
-    // Remember to  close the client when you're done
-    client.close()
+  // Remember to  close the client when you are done
+  client.close()
 }
 ```
 

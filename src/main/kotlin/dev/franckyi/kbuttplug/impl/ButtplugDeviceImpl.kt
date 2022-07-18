@@ -15,9 +15,13 @@ import dev.franckyi.kbuttplug.proto.DeviceMessageKt.rotateCmd
 import dev.franckyi.kbuttplug.proto.DeviceMessageKt.rotateComponent
 import dev.franckyi.kbuttplug.proto.DeviceMessageKt.vibrateCmd
 import dev.franckyi.kbuttplug.proto.DeviceMessageKt.vibrateComponent
+import mu.KotlinLogging
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+
+private val logger = KotlinLogging.logger {}
 
 internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: DeviceAddedMessage) : ButtplugDevice {
     override val index: Int
@@ -38,6 +42,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
             { DeviceAttributeType.inverse[it.messageType]!! },
             { DeviceAttributeData(it.featureCount, it.stepCountList, it.endpointsList.map { Endpoint.inverse[it]!! }) }
         )
+        logger.info { "Initialized device $name" }
     }
 
     override fun close() {
@@ -45,14 +50,13 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
             pointer?.let {
                 ButtplugFFI.INSTANCE.buttplug_free_device(it)
                 pointer = null
+                logger.debug { "Closed device $name" }
             }
         }
     }
 
     override fun stop(): CompletableFuture<Void> {
-        return sendDeviceMessage {
-            stopDeviceCmd = defaultStopDeviceCmd
-        }
+        return sendDeviceMessage { stopDeviceCmd = defaultStopDeviceCmd }
             .thenApply(::expectServerMessage)
             .thenAccept(::expectOk)
     }
@@ -147,9 +151,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
 
     override fun fetchBatteryLevel(): CompletableFuture<Double> {
         check(hasAttribute(DeviceAttributeType.BATTERY_LEVEL)) { "The device $name doesn't support BatteryLevelCmd" }
-        return sendDeviceMessage {
-            this.batteryLevelCmd = defaultBatteryLevelCmd
-        }
+        return sendDeviceMessage { this.batteryLevelCmd = defaultBatteryLevelCmd }
             .thenApply(::expectDeviceEvent)
             .thenApply(::expectBatteryLevelReading)
             .thenApply { it.reading }
@@ -157,9 +159,7 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
 
     override fun fetchRSSILevel(): CompletableFuture<Int> {
         check(hasAttribute(DeviceAttributeType.RSSI_LEVEL)) { "The device $name doesn't support RSSILevelCmd" }
-        return sendDeviceMessage {
-            this.rssiLevelCmd = defaultRSSILevelCmd
-        }
+        return sendDeviceMessage { this.rssiLevelCmd = defaultRSSILevelCmd }
             .thenApply(::expectDeviceEvent)
             .thenApply(::expectRSSILevelReading)
             .thenApply { it.reading }
@@ -240,21 +240,29 @@ internal class ButtplugDeviceImpl internal constructor(client: Pointer, msg: Dev
         val ptr = createPointer(future)
         futureMap[ptr] = future
         val buf = msg.toByteArray()
+        logger.trace { "Device message sent to server: $msg" }
         ButtplugFFI.INSTANCE.buttplug_device_protobuf_message(
             devicePointer, buf,
             i32(buf.size.toLong()), callback, ptr
         )
-        return future
+        return future.orTimeout(10, TimeUnit.SECONDS).exceptionally {
+            logger.error { "Did not get a response from server in time" }
+            futureResponseMap.remove(ptr)
+            throw it
+        }
     }
 
     private fun onServerResponse(ctx: Pointer?, ptr: Pointer, len: u32) {
-        val message = readFFIMessage(ptr, len)
+        val msg = readFFIMessage(ptr, len)
         CompletableFuture.runAsync {
             if (ctx != null) {
-                ctx.let { futureResponseMap.remove(it) }?.complete(message)
-            } else if (message.hasDeviceEvent() && message.deviceEvent.hasRawReading()) {
-                val rawReading = message.deviceEvent.rawReading
+                ctx.let { futureResponseMap.remove(it) }?.complete(msg)
+            } else if (msg.hasDeviceEvent() && msg.deviceEvent.hasRawReading()) {
+                val rawReading = msg.deviceEvent.rawReading
+                logger.debug { "Received reading of device $name for endpoint ${rawReading.endpoint}" }
                 endpointSubscriptions[Endpoint.inverse[rawReading.endpoint]]?.invoke(rawReading.data.toByteArray())
+            } else {
+                logger.warn { "Ignoring received message: $msg" }
             }
         }
     }

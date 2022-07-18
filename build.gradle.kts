@@ -25,6 +25,7 @@ dependencies {
     implementation("com.google.protobuf:protobuf-kotlin:${rootProject.property("protobuf_version")}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${rootProject.property("kotlinx_serialization_version")}")
     implementation("org.slf4j:slf4j-api:${rootProject.property("slf4j_version")}")
+    implementation("io.github.microutils:kotlin-logging-jvm:${rootProject.property("kotlin_logging_version")}")
 
     testImplementation(kotlin("test"))
     testRuntimeOnly("org.slf4j:slf4j-simple:${rootProject.property("slf4j_version")}")

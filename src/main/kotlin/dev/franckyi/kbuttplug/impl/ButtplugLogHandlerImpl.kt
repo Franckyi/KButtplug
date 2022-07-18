@@ -5,8 +5,11 @@ import dev.franckyi.kbuttplug.api.ButtplugLogHandler
 import dev.franckyi.kbuttplug.api.ButtplugLogMessage
 import dev.franckyi.kbuttplug.api.Level
 import kotlinx.serialization.json.Json
+import mu.KotlinLogging
 import org.slf4j.Logger
 import java.util.concurrent.atomic.AtomicBoolean
+
+private val logger = KotlinLogging.logger {}
 
 class ButtplugLogHandlerImpl(level: Level, useJson: Boolean, callback: (String) -> Unit) : ButtplugLogHandler {
     private var logHandle: Pointer?
@@ -15,7 +18,13 @@ class ButtplugLogHandlerImpl(level: Level, useJson: Boolean, callback: (String) 
     init {
         check(logHandlerActive.compareAndSet(false, true)) { "There is already an active log handler!" }
         this.callback = ButtplugLogCallback.of { _, str -> callback(str) }
-        logHandle = ButtplugFFI.INSTANCE.buttplug_create_log_handle(this.callback!!, null, level.value, useJson)
+        logHandle = ButtplugFFI.INSTANCE.buttplug_create_log_handle(
+            this.callback!!,
+            u32(Pointer.nativeValue(createPointer(this))),
+            level.value,
+            useJson
+        )
+        logger.debug { "Created log handler" }
     }
 
     override fun close() {
@@ -25,6 +34,7 @@ class ButtplugLogHandlerImpl(level: Level, useJson: Boolean, callback: (String) 
                 logHandle = null
                 callback = null
                 logHandlerActive.set(false)
+                logger.debug { "Closed logger" }
             }
         }
     }
@@ -36,6 +46,7 @@ class ButtplugLogHandlerImpl(level: Level, useJson: Boolean, callback: (String) 
         fun activateBuiltinLogger() {
             check(logHandlerActive.compareAndSet(false, true)) { "There is already an active log handler!" }
             ButtplugFFI.INSTANCE.buttplug_activate_env_logger()
+            logger.debug { "Activated builtin logger" }
         }
 
         fun createLogger(level: Level, useJson: Boolean, callback: (String) -> Unit) =

@@ -10,14 +10,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Represents a log callback that the FFI can call to output log messages.
- * Only one should be constructed at a given time.
- * If you want to change the log handler, you first need to [close] the previous log handler.
+ * **IMPORTANT NOTE: Memory leaks are being investigated when instanciating a new [ButtplugLogHandler],
+ * so please only use [activateBuiltinLogger] for now.**
  *
- * @see activateBuiltinLogger
- * @see createLogger
- * @see createAdvancedLogger
- * @see createSlf4jLogger
+ * Represents a log callback that the FFI can call to output log messages.
+ *
+ * You can either use the builtin log handler which logs to console using [activateBuiltinLogger],
+ * or you can instanciate your own logger with [createLogger], [createAdvancedLogger] or [createSlf4jLogger].
+ *
+ * Only one instance of [ButtplugLogHandler] should be constructed at a given time.
+ * If you want to change the log handler, you first need to [close] the previous log handler.
  */
 interface ButtplugLogHandler : AutoCloseable {
     companion object {
@@ -37,6 +39,7 @@ interface ButtplugLogHandler : AutoCloseable {
          * @param callback the callback to call when a log message is received
          * @return the log handler
          */
+        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createLogger(
             level: Level = Level.TRACE,
             useJson: Boolean = false,
@@ -53,6 +56,7 @@ interface ButtplugLogHandler : AutoCloseable {
          * @param callback the callback to call when a log message is received
          * @return the log handler
          */
+        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createAdvancedLogger(
             level: Level = Level.TRACE,
             callback: (ButtplugLogMessage) -> Unit
@@ -67,10 +71,11 @@ interface ButtplugLogHandler : AutoCloseable {
          * @return the log handler
          * @see ButtplugLogMessage
          */
+        @Deprecated("Memory leak issues, use builtin logger instead", ReplaceWith("activateBuiltinLogger()"))
         fun createSlf4jLogger(
             logger: Logger = LoggerFactory.getLogger("buttplug_rs_ffi"),
             level: Level = Level.TRACE,
-            format: (ButtplugLogMessage) -> String = { it.fields.message }
+            format: (ButtplugLogMessage) -> String = { "[${it.target}] ${it.fields.message}" }
         ): ButtplugLogHandler = ButtplugLogHandlerImpl.createSlf4jLogger(logger, level, format)
     }
 }

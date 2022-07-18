@@ -4,11 +4,15 @@ import com.sun.jna.Callback
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
+import mu.KotlinLogging
+
+private val logger = KotlinLogging.logger {}
 
 @Suppress("FunctionName")
 internal interface ButtplugFFI : Library {
     companion object {
         val INSTANCE: ButtplugFFI by lazy {
+            logger.debug { "Loading buttplug_rs_ffi native library" }
             Native.load("buttplug_rs_ffi", ButtplugFFI::class.java)
         }
     }
@@ -35,7 +39,7 @@ internal interface ButtplugFFI : Library {
     fun buttplug_free_device(device: Pointer)
     fun buttplug_create_log_handle(
         callback: ButtplugLogCallback,
-        ctx: Pointer?,
+        ctx: u32,
         maxLevel: String,
         useJson: Boolean
     ): Pointer

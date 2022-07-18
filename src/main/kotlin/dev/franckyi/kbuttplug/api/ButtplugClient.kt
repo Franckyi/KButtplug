@@ -113,6 +113,7 @@ interface ButtplugClient : AutoCloseable {
 
     /**
      * Connects to an embedded Buttplug server running within the application.
+     * Does nothing if the client is already connected to a server.
      *
      * @param serverName the name of the Buttplug server
      * @param deviceConfigJSON the device configuration as a JSON string, will use embedded device configuration by default
@@ -135,6 +136,7 @@ interface ButtplugClient : AutoCloseable {
 
     /**
      * Connects to a remote Buttplug server using Websockets.
+     * Does nothing if the client is already connected to a server.
      *
      * @param address The URL of the websocket
      * @return a [CompletableFuture] that completes after the connection to the server is established,
@@ -191,14 +193,13 @@ interface ButtplugClient : AutoCloseable {
     fun ping(): CompletableFuture<Void>
 
     /**
-     * Disconnects the client from the server.
+     * Disconnects the client from the server. Does nothing if the client is already not connected to a server.
      *
      * Note that after this method is called, the server may still send a `Disconnected` message
      * that will trigger the [onDisconnect] callback.
      *
      * @return a [CompletableFuture] that completes when the server returns an `Ok` message,
      * or fails if the server returns an `Error` message
-     * @throws IllegalStateException if the client is not connected to a server
      * @see connectWebsocket
      * @see onDisconnect
      */
